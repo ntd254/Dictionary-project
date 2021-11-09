@@ -27,20 +27,15 @@ int findWordSameSoundex(BTA *soundexDictionary, char word[], char *sameSoundexWo
     soundex(word, soundexCode);
     char temp[] = "    ";
     char soundexWord[50];
-    // char *soundexWord = (char *)malloc(10);
-    int flag = btsel(soundexDictionary, soundexCode, soundexWord, 10, &size);
-    // printf("%s\n", soundexWord);
-    // printf("%s", soundexCode);
+    int flag = btsel(soundexDictionary, soundexCode, soundexWord, 50, &size);
     if (flag == 0)
     {
-        sameSoundexWords[length++] = soundexWord;
-        flag = btseln(soundexDictionary, temp, soundexWord, 10, &size);
+        sameSoundexWords[length++] = strdup(soundexWord);
+        flag = btseln(soundexDictionary, temp, soundexWord, 50, &size);
         while (strcmp(soundexCode, temp) == 0 && flag == 0)
         {
-            printf("%s\n", soundexWord);
-            // strcpy(sameSoundexWords[length++], soundexWord);
-            sameSoundexWords[1] = soundexWord;
-            flag = btseln(soundexDictionary, temp, soundexWord, 10, &size);
+            sameSoundexWords[length++] = strdup(soundexWord);
+            flag = btseln(soundexDictionary, temp, soundexWord, 50, &size);
         }
     }
     return length;
@@ -79,22 +74,21 @@ int main()
     addWord(dictionary, soundexDictionary, "tailor", "ky");
     addWord(dictionary, soundexDictionary, "tailer", "tuan");
     char meaning[50];
-    char *sameSoundexWords[10];
+    char *sameSoundexWords[100];
     int length = 0;
     findMeaning(dictionary, soundexDictionary, "tayler", meaning, &length, sameSoundexWords);
     printf("%d\n", length);
-    // if (length == 0)
-    // {
-    //     printf("%s", meaning);
-    // }
-    // else
-    // {
-    //     for (int i = 0; i < length; i++)
-    //     {
-    //         printf("%s ", sameSoundexWords[i]);
-    //     }
-    // }
-    printf("%s", sameSoundexWords[1]);
+    if (length == 0)
+    {
+        printf("%s", meaning);
+    }
+    else
+    {
+        for (int i = 0; i < length; i++)
+        {
+            printf("%s ", sameSoundexWords[i]);
+        }
+    }
     printf("\n");
     printDictionary(soundexDictionary);
     printf("\n");
