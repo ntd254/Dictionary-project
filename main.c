@@ -72,13 +72,6 @@ void printDictionary(BTA *dictionary)
 
 int main()
 {
-    // char string1[20] = "piter";
-    // char string2[20] = "peter";
-    // char result[20];
-    // soundex(string1, result);
-    // printf("%s\n", result);
-    // soundex(string2, result);
-    // printf("%s\n", result);
     BTA *dictionary = createDictionary("dictionary");
     BTA *soundexDictionary = createDictionary("soundexDictionary");
     btdups(soundexDictionary, 1);
