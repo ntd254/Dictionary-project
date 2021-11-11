@@ -41,7 +41,7 @@ int findWordSameSoundex(BTA *soundexDictionary, char word[], char *sameSoundexWo
     return length;
 }
 
-char *findMeaning(BTA *dictionary, BTA *soundexDictionary, char word[], char meaning[], int *length, char *sameSoundexWords[])
+int findMeaning(BTA *dictionary, BTA *soundexDictionary, char word[], char meaning[], int *length, char *sameSoundexWords[])
 {
     int size;
     int flag = btsel(dictionary, word, meaning, 50, &size);
@@ -49,6 +49,7 @@ char *findMeaning(BTA *dictionary, BTA *soundexDictionary, char word[], char mea
     {
         *length = findWordSameSoundex(soundexDictionary, word, sameSoundexWords);
     }
+    return flag;
 }
 
 void printDictionary(BTA *dictionary)
@@ -76,9 +77,9 @@ int main()
     char meaning[50];
     char *sameSoundexWords[100];
     int length = 0;
-    findMeaning(dictionary, soundexDictionary, "tayler", meaning, &length, sameSoundexWords);
+    int flag = findMeaning(dictionary, soundexDictionary, "abc", meaning, &length, sameSoundexWords);
     printf("%d\n", length);
-    if (length == 0)
+    if (length == 0 && flag == 0)
     {
         printf("%s", meaning);
     }
