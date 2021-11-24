@@ -1,8 +1,12 @@
+// gcc main.c soundex.c -o main -lbt -Lbtree/lib -Ibtree/inc
+
 #include <stdio.h>
 #include "soundex.h"
 #include "btree/inc/btree.h"
 #include <string.h>
 #include <stdlib.h>
+
+#define maxSizeWord 200
 
 BTA *createDictionary(char name[])
 {
@@ -11,12 +15,38 @@ BTA *createDictionary(char name[])
     return dictionary;
 }
 
-void addWord(BTA *dictonary, BTA *soundexDictionary, char word[], char meaning[])
+void addWord(BTA *dictionary, BTA *soundexDictionary, char word[], char meaning[])
 {
     char soundexCode[] = "    ";
     soundex(word, soundexCode);
-    btins(dictonary, word, meaning, strlen(meaning) + 1);
+    btins(dictionary, word, meaning, strlen(meaning) + 1);
     btins(soundexDictionary, soundexCode, word, strlen(word) + 1);
+}
+
+void readFile(BTA *dictionary, BTA *soundexDictionary, char fileName[])
+{
+    FILE *file_dict = fopen(fileName, "r");
+    char word[maxSizeWord];
+    char meaning[maxSizeWord];
+    char temp[maxSizeWord];
+    int flag = 1;
+    while (!feof(file_dict))
+    {
+        fgets(temp, maxSizeWord, file_dict);
+        if (temp[0] == '@')
+        {
+            temp[strlen(temp) - 3] = '\0';
+            strcpy(word, &temp[1]);
+            flag = 1;
+        }
+        if (temp[0] == '-' && flag == 1)
+        {
+            temp[strlen(temp) - 1] = '\0';
+            strcpy(meaning, &temp[2]);
+            flag = 0;
+            addWord(dictionary, soundexDictionary, word, meaning);
+        }
+    }
 }
 
 int findWordSameSoundex(BTA *soundexDictionary, char word[], char *sameSoundexWords[])
@@ -26,16 +56,16 @@ int findWordSameSoundex(BTA *soundexDictionary, char word[], char *sameSoundexWo
     char soundexCode[] = "    ";
     soundex(word, soundexCode);
     char temp[] = "    ";
-    char soundexWord[50];
-    int flag = btsel(soundexDictionary, soundexCode, soundexWord, 50, &size);
+    char soundexWord[maxSizeWord];
+    int flag = btsel(soundexDictionary, soundexCode, soundexWord, maxSizeWord, &size);
     if (flag == 0)
     {
         sameSoundexWords[length++] = strdup(soundexWord);
-        flag = btseln(soundexDictionary, temp, soundexWord, 50, &size);
+        flag = btseln(soundexDictionary, temp, soundexWord, maxSizeWord, &size);
         while (strcmp(soundexCode, temp) == 0 && flag == 0)
         {
             sameSoundexWords[length++] = strdup(soundexWord);
-            flag = btseln(soundexDictionary, temp, soundexWord, 50, &size);
+            flag = btseln(soundexDictionary, temp, soundexWord, maxSizeWord, &size);
         }
     }
     return length;
@@ -44,7 +74,7 @@ int findWordSameSoundex(BTA *soundexDictionary, char word[], char *sameSoundexWo
 int findMeaning(BTA *dictionary, BTA *soundexDictionary, char word[], char meaning[], int *length, char *sameSoundexWords[])
 {
     int size;
-    int flag = btsel(dictionary, word, meaning, 50, &size);
+    int flag = btsel(dictionary, word, meaning, 200, &size);
     if (flag != 0)
     {
         *length = findWordSameSoundex(soundexDictionary, word, sameSoundexWords);
@@ -54,16 +84,18 @@ int findMeaning(BTA *dictionary, BTA *soundexDictionary, char word[], char meani
 
 void printDictionary(BTA *dictionary)
 {
-    char *meaning = (char *)malloc(50);
-    char *word = (char *)malloc(50);
+    char *meaning = (char *)malloc(maxSizeWord);
+    char *word = (char *)malloc(maxSizeWord);
     int size;
     int flag = btpos(dictionary, 1);
     while (flag == 0)
     {
-        flag = btseln(dictionary, word, meaning, 50, &size);
+        flag = btseln(dictionary, word, meaning, maxSizeWord, &size);
         if (!flag)
             printf("%s: %s\n", word, meaning);
     }
+    free(meaning);
+    free(word);
 }
 
 int main()
@@ -71,15 +103,14 @@ int main()
     BTA *dictionary = createDictionary("dictionary");
     BTA *soundexDictionary = createDictionary("soundexDictionary");
     btdups(soundexDictionary, 1);
+    readFile(dictionary, soundexDictionary, "dict.txt");
     addWord(dictionary, soundexDictionary, "taylor", "dat");
-    addWord(dictionary, soundexDictionary, "tailor", "ky");
     addWord(dictionary, soundexDictionary, "tailer", "tuan");
-    char meaning[50];
+    char meaning[maxSizeWord];
     char *sameSoundexWords[100];
     int length = 0;
-    int flag = findMeaning(dictionary, soundexDictionary, "abc", meaning, &length, sameSoundexWords);
-    printf("%d\n", length);
-    if (length == 0 && flag == 0)
+    int flag = findMeaning(dictionary, soundexDictionary, "taylor", meaning, &length, sameSoundexWords);
+    if (flag == 0)
     {
         printf("%s", meaning);
     }
@@ -91,7 +122,7 @@ int main()
         }
     }
     printf("\n");
-    printDictionary(soundexDictionary);
-    printf("\n");
-    printDictionary(dictionary);
+    // printDictionary(soundexDictionary);
+    // printf("\n");
+    // printDictionary(dictionary);
 }
