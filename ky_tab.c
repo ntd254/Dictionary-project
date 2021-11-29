@@ -18,14 +18,17 @@ void menu(){
     printf("1 - add word\n");
     printf("2 - search meaning\n");
     printf("3 - delete word\n");
-    printf("4 - auto complete \n");
-    printf("5 - exit\n");
+    printf("4 - suggestion search\n");
+    printf("5 - auto complete \n");
+    printf("6 - exit\n");
 }
 //tasks
 void input(char word[]);
 void addWord(BTA* dictionary, BTA* soundexDictionary, char word[], char meaning[]);
-void search(BTA* dictionary, BTA* soundexDictionary, char word[], char meaning[]);
+void norm_search(BTA* dictionary, char word[], char meaning[]);
 void delete(BTA* dictionary, BTA* soundexDictionary, char word[]);
+//
+void suggestion(BTA* soundexDictionary, char word[], char* sameSoundexWords);
 int same_soundex(BTA* soundexDictionary, char word[], char* sameSoundexWords[]); // return number of sameSoundexWords soundex words
 // using same_soundex before using tab
 // to find the words with same soundex for easy complete
@@ -37,11 +40,11 @@ int main(){
     BTA* soundexDictionary = crt_dict("soundexDictionary");
     btdups(soundexDictionary,1);
     int length = 0;
-    char word[20];
+    char word[30];
     char meaning[maxSizeWord];
-    char* sameSoundexWords[20];
+    char* sameSoundexWords[10];
     load_file(dictionary, soundexDictionary, "short_dict.txt");
-    printDictionary(dictionary);
+    // printDictionary(dictionary);
     menu();
     while(1){
         int cmd;
@@ -60,7 +63,7 @@ int main(){
             getchar();
             printf("enter word for searching: ");
             input(word);
-            search(dictionary, soundexDictionary,word, meaning);
+            norm_search(dictionary, word, meaning);
         }else if(cmd == 3){
             getchar();
             printf("enter word for deleting: ");
@@ -72,6 +75,16 @@ int main(){
             }else{
             delete(dictionary, soundexDictionary, word);}
         }else if(cmd == 4){
+            getchar();
+            printf("suggestion search: ");
+            input(word);
+            int l = same_soundex(soundexDictionary, word, sameSoundexWords);
+            if(l != 0){
+                for(int i = 0; i < l; i ++){
+                    printf("%s  ", sameSoundexWords[i]);
+                }printf("\n");
+            }
+        }else if(cmd == 5){
             getchar();
             printf("enter word for complete: ");
             tab(dictionary);
@@ -144,21 +157,14 @@ void addWord(BTA* dictionary, BTA* soundexDictionary, char word[], char meaning[
     btins(dictionary, word, meaning, strlen(meaning) + 1);
     btins(soundexDictionary, soundexCode, word, strlen(word) + 1);
 }
-void search(BTA *dictionary, BTA* soundexDictionary, char word[], char meaning[])
+void norm_search(BTA *dictionary, char word[], char meaning[])
 {
     int size;
     int flag = btsel(dictionary, word, meaning, maxSizeWord, &size);
     if (flag == 0){
         printf("%s\n", meaning);
     }else{
-        char* same[20];
-        int l = same_soundex(soundexDictionary, word, same);
-        if(l == 0){
-            printf("not found!\n");
-        }else{
-        for(int i = 0; i < l; i ++){
-            printf("%s  ",same[i]);
-        }printf("\n");}
+        printf("not found!\n");
     }
 }
 void delete(BTA* dictionary, BTA* soundexDictionary, char word[]){
@@ -187,6 +193,7 @@ int same_soundex(BTA *soundexDictionary, char word[], char *sameSoundexWords[]){
         {
             sameSoundexWords[length++] = strdup(soundexWord);
             flag = btseln(soundexDictionary, temp, soundexWord, maxSizeWord, &size);
+            if(length == 10) break;// modified
         }
     }
     return length;
