@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "soundex.h"
 #include "btree.h"
 
@@ -11,15 +12,25 @@
 BTA* crt_dict(char name[]);
 void load_file(BTA* dictionary, BTA* soundexDictionary, char filename[]); // load from short_dict.txt
 void printDictionary(BTA* dictionary);
+void menu(){
+    printf("------------DICTIONARY------------\n");
+    printf("0 - print out the dictionary\n");
+    printf("1 - add word\n");
+    printf("2 - search meaning\n");
+    printf("3 - delete word\n");
+    printf("4 - auto complete \n");
+    printf("5 - exit\n");
+}
 //tasks
+void input(char word[]);
 void addWord(BTA* dictionary, BTA* soundexDictionary, char word[], char meaning[]);
-void search(BTA* dictionary, char word[], char meaning[]);
+void search(BTA* dictionary, BTA* soundexDictionary, char word[], char meaning[]);
 void delete(BTA* dictionary, BTA* soundexDictionary, char word[]);
 int same_soundex(BTA* soundexDictionary, char word[], char* sameSoundexWords[]); // return number of sameSoundexWords soundex words
 // using same_soundex before using tab
 // to find the words with same soundex for easy complete
 void tab(BTA* dictionary);// press \t and then \n to complete the word (but in another line)
-int tab_list(BTA* dictionary, char str[], char* same[]);
+int tab_list(BTA* dictionary, char str[], char same[]);
 // main function
 int main(){
     BTA* dictionary = crt_dict("dictionary");
@@ -28,13 +39,47 @@ int main(){
     int length = 0;
     char word[20];
     char meaning[maxSizeWord];
-    char* sameSoundexWords[10];
+    char* sameSoundexWords[20];
     load_file(dictionary, soundexDictionary, "test.txt");
-
-    tab(dictionary);
-    // else
-    // printf("finish!\n");
     printDictionary(dictionary);
+    menu();
+    while(1){
+        int cmd;
+        printf("your command: "); 
+        scanf("%d",&cmd);
+        if(cmd == 0){
+            printDictionary(dictionary);
+        }else if(cmd == 1){
+            getchar();
+            printf("enter word: ");
+            input(word);
+            printf("enter meaning: ");
+            input(meaning);
+            addWord(dictionary, soundexDictionary, word, meaning);
+        }else if(cmd == 2){
+            getchar();
+            printf("enter word for searching: ");
+            input(word);
+            search(dictionary, soundexDictionary,word, meaning);
+        }else if(cmd == 3){
+            getchar();
+            printf("enter word for deleting: ");
+            input(word);
+            int rsize;
+            int flag = btsel(dictionary, word, meaning, maxSizeWord, &rsize);
+            if(flag != 0){
+                printf("not found!\n");
+            }else{
+            delete(dictionary, soundexDictionary, word);}
+        }else if(cmd == 4){
+            getchar();
+            printf("enter word for complete: ");
+            tab(dictionary);
+        }else{
+            break;
+        }
+    }
+    printf("finish!\n");
     return 0;
 }
 // init funtions
@@ -84,21 +129,36 @@ void printDictionary(BTA *dictionary)
     free(meaning);
     free(word);
 }
+void input(char word[]){
+    char* str = (char*)malloc(sizeof(char)* maxSizeWord);
+    fgets(str, maxSizeWord, stdin);
+    for(int i = 0; i < strlen(str); i ++){ str[i] = tolower(str[i]); } 
+    str[strlen(str) -1 ] = '\0';
+    strcpy(word,str);
+}
 // 1st feature
 void addWord(BTA* dictionary, BTA* soundexDictionary, char word[], char meaning[]){
     char soundexCode[] = "    ";// 4 spaces
     soundex(word, soundexCode);
+    word[strlen(word)] = '\0';// modified
     btins(dictionary, word, meaning, strlen(meaning) + 1);
     btins(soundexDictionary, soundexCode, word, strlen(word) + 1);
 }
-void search(BTA *dictionary, char word[], char meaning[])
+void search(BTA *dictionary, BTA* soundexDictionary, char word[], char meaning[])
 {
     int size;
     int flag = btsel(dictionary, word, meaning, maxSizeWord, &size);
-    if (flag != 0){
-        printf("not found!\n");
+    if (flag == 0){
+        printf("%s\n", meaning);
     }else{
-        printf("%s\n",meaning);
+        char* same[20];
+        int l = same_soundex(soundexDictionary, word, same);
+        if(l == 0){
+            printf("not found!\n");
+        }else{
+        for(int i = 0; i < l; i ++){
+            printf("%s  ",same[i]);
+        }printf("\n");}
     }
 }
 void delete(BTA* dictionary, BTA* soundexDictionary, char word[]){
@@ -107,11 +167,8 @@ void delete(BTA* dictionary, BTA* soundexDictionary, char word[]){
     int sig1 = btdel(dictionary, word);
     int sig2 = btdel(soundexDictionary, soundexCode);
     if(sig1 == 0){
-        printf("successful deleting in dict\n");
-    }else printf("error 1!\n");
-    if(sig2 == 0){
-        printf("successful deleting in soundex dict\n");
-    }else printf("error 2!\n");
+        printf("successful deleting\n");
+    }
 }
 //2nd feature
 int same_soundex(BTA *soundexDictionary, char word[], char *sameSoundexWords[]){
@@ -136,45 +193,40 @@ int same_soundex(BTA *soundexDictionary, char word[], char *sameSoundexWords[]){
 }
 // 3rd feature
 void tab(BTA* dictionary){
-    char str[10];
-    char* same[20];
-    char c;
-    int j = 0;
-    do{
-        c = getchar();
-        if(c != '\t'){
-            strncat(str,&c,1);
-            j++;
-        }
-    }while((c != ' ') && (c != '\t'));
+    char str[50];
+    char same[maxSizeWord];
+    scanf("%[^\t]%*c", str);
 
     int l = tab_list(dictionary, str, same);
-    if(l != 0){
-        for(int i = 0; i < l;i ++){
-            if(strncmp(str,same[i],j) == 0){
-                printf("%s  ",same[i]); //break;
-            }
-        }printf("\n");
-    }
-    else{
-        printf("not found!\n");
+    if(l == 0){
+        printf("error\n");
+    }else{
+            printf("%s\n",same);
     } 
 }
-int tab_list(BTA* dictionary, char str[], char* same[]){
+int tab_list(BTA* dictionary, char str[], char same[]){
     int total = 0;
     int value;
     char key[50];
-    int flag  = bfndky(dictionary, str, &value);
+    int flag = bfndky(dictionary, str, &value);
+    // printf("%d",flag);
     if(flag == 0){
-        same[total++] = strdup(str);
-    }
-    while(1){
-        flag  = bnxtky(dictionary, key, &value);
-        if(flag != 0  || strncmp(key, str, strlen(str)) != 0){
-            break;
-        }else{
-            same[total++] = strdup(key);
-            if(total >= 10) break;
+        strcpy(same, str); 
+        do{
+            flag = bnxtky(dictionary, key, &value);
+            if(flag == 0 && strncmp(key, str, strlen(str)) == 0){
+                strcpy(same, key); total = 1;
+                break;
+            }
+        }while(flag == 0);
+     }else{
+        int sig = btpos(dictionary, 1);
+        while(sig == 0){
+            sig = bnxtky(dictionary, key, &value);
+            if(sig == 0 && strncmp(key, str, strlen(str)) == 0){
+                strcpy(same, key); total = 1; 
+                break;
+            }
         }
     }
     return total;
