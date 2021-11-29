@@ -40,7 +40,7 @@ int main(){
     char word[20];
     char meaning[maxSizeWord];
     char* sameSoundexWords[20];
-    load_file(dictionary, soundexDictionary, "test.txt");
+    load_file(dictionary, soundexDictionary, "short_dict.txt");
     printDictionary(dictionary);
     menu();
     while(1){
