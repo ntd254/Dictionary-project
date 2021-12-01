@@ -154,8 +154,13 @@ void addWord(BTA* dictionary, BTA* soundexDictionary, char word[], char meaning[
     char soundexCode[] = "    ";// 4 spaces
     soundex(word, soundexCode);
     word[strlen(word)] = '\0';// modified
+    int size;
+    int flag = btsel(dictionary, word, meaning, maxSizeWord, &size);
+    if(flag == 0){
+        printf("word already exist!\n");
+    }else{
     btins(dictionary, word, meaning, strlen(meaning) + 1);
-    btins(soundexDictionary, soundexCode, word, strlen(word) + 1);
+    btins(soundexDictionary, soundexCode, word, strlen(word) + 1);}
 }
 void norm_search(BTA *dictionary, char word[], char meaning[])
 {
